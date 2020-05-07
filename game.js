@@ -209,6 +209,7 @@ const Screens = {
     },
     update() {
       globais.flappyBirb.update();
+      globais.floor.update();
     }
   }
 }
