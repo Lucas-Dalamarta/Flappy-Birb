@@ -34,7 +34,7 @@ function createFlappyBirb() {
     gravity: 0.25,
     update() {
       if (doCollision(flappyBirb, globais.floor)) {
-        soundHit.play();
+        // soundHit.play();
 
         setTimeout(() => {
           changeToScreen(Screens.begin);
