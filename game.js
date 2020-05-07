@@ -73,7 +73,7 @@ const background = {
       sprites,
       background.sx, background.sy,
       background.sWidth, background.sHeight,
-      (background.sx + background.sWidth), background.dy,
+      (background.dx + background.sWidth), background.dy,
       background.sWidth, background.sHeight,
     );
   },
