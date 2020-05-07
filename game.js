@@ -1,60 +1,122 @@
 console.log('Flappy Birb');
 
+let frames = 0;
+
+const soundHit = new Audio();
+soundHit.src = './sounds/hit.wav';
+
 const sprites = new Image();
 sprites.src = './sprites.png';
 
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d');
 
-const flappyBirb = {
-  sx: 0,
-  sY: 0,
-  w: 33,
-  h: 24,
-  x: 10,
-  y: 50,
-  speed: 0,
-  gravity: 0.25,
-  update() {
-    flappyBirb.speed = flappyBirb.speed + flappyBirb.gravity;
-    flappyBirb.y = flappyBirb.y + flappyBirb.speed;
-  },
-  draw() {
-    context.drawImage(
-      sprites,
-      flappyBirb.sx, flappyBirb.sY,
-      flappyBirb.w, flappyBirb.h,
-      flappyBirb.x, flappyBirb.y,
-      flappyBirb.w, flappyBirb.h,
-    );
-  },
+function doCollision(flappyBirb, floor) {
+  const flappyBirbY = flappyBirb.y + flappyBirb.h;
+  const floorY = floor.y;
+
+  return flappyBirbY >= floorY ? true : false;
 }
 
-const floor = {
-  sx: 0,
-  sY: 610,
-  w: 224,
-  h: 112,
-  x: 0,
-  y: canvas.height - 112,
-  draw() {
-    context.drawImage(
-      sprites,
-      floor.sx, floor.sY,
-      floor.w, floor.h,
-      floor.x, floor.y,
-      floor.w, floor.h,
-    );
+function createFlappyBirb() {
+  const flappyBirb = {
+    sx: 0,
+    sY: 0,
+    w: 33,
+    h: 24,
+    x: 10,
+    y: 50,
+    jumpStrength: 4.6,
+    jump() {
+      flappyBirb.speed = - flappyBirb.jumpStrength;
+    },
+    speed: 0,
+    gravity: 0.25,
+    update() {
+      if (doCollision(flappyBirb, globais.floor)) {
+        soundHit.play();
 
-    context.drawImage(
-      sprites,
-      floor.sx, floor.sY,
-      floor.w, floor.h,
-      (floor.sx + floor.w), floor.y,
-      floor.w, floor.h,
-    );
-  },
+        setTimeout(() => {
+          changeToScreen(Screens.begin);
+        }, 500);
+
+        return;
+      }
+
+      flappyBirb.speed = flappyBirb.speed + flappyBirb.gravity;
+      flappyBirb.y = flappyBirb.y + flappyBirb.speed;
+    },
+    moves: [
+      { spriteX: 0, spriteY: 0, }, // Wings up
+      { spriteX: 0, spriteY: 26, }, // Wings in middle
+      { spriteX: 0, spriteY: 52, }, // Wings down
+    ],
+    actualFrame: 0,
+    updateActualFrame() {
+      const frameInterval = 10;
+      const hasPassedInterval = frames % frameInterval === 0;
+
+      if (hasPassedInterval) {
+        const incrementBase = 1;
+        const increment = incrementBase + flappyBirb.actualFrame;
+        const repeatBase = flappyBirb.moves.length;
+        flappyBirb.actualFrame = increment % repeatBase;
+      }
+    },
+    draw() {
+      flappyBirb.updateActualFrame();
+      const { spriteX, spriteY } = flappyBirb.moves[flappyBirb.actualFrame];
+
+      context.drawImage(
+        sprites,
+        spriteX, spriteY,
+        flappyBirb.w, flappyBirb.h,
+        flappyBirb.x, flappyBirb.y,
+        flappyBirb.w, flappyBirb.h,
+      );
+    },
+  }
+
+  return flappyBirb;
 }
+
+function createFloor() {
+  const floor = {
+    sx: 0,
+    sY: 610,
+    w: 224,
+    h: 112,
+    x: 0,
+    y: canvas.height - 112,
+    update() {
+      const floorMove = 1;
+      const repeatIn = floor.w / 2;
+      const move = floor.x - floorMove;
+
+      floor.x = move % repeatIn;
+    },
+    draw() {
+      context.drawImage(
+        sprites,
+        floor.sx, floor.sY,
+        floor.w, floor.h,
+        floor.x, floor.y,
+        floor.w, floor.h,
+      );
+
+      context.drawImage(
+        sprites,
+        floor.sx, floor.sY,
+        floor.w, floor.h,
+        (floor.x + floor.w), floor.y,
+        floor.w, floor.h,
+      );
+    },
+  }
+
+  return floor;
+}
+
 
 const background = {
   sX: 390,
@@ -106,33 +168,47 @@ const getReayImage = {
 /**
  * [Screens]
  */
+const globais = {}
 
 let activeScreen = {};
 function changeToScreen(newScreen) {
   activeScreen = newScreen;
+
+  if (activeScreen.init) {
+    activeScreen.init();
+  }
 }
 
 const Screens = {
   begin: {
+    init() {
+      globais.flappyBirb = createFlappyBirb();
+      globais.floor = createFloor();
+    },
     draw() {
       background.draw();
-      floor.draw();
-      flappyBirb.draw();
+      globais.floor.draw();
+      globais.flappyBirb.draw();
       getReayImage.draw();
     },
     click() {
       changeToScreen(Screens.game);
     },
-    update() { }
+    update() {
+      globais.floor.update();
+    }
   },
   game: {
     draw() {
       background.draw();
-      floor.draw();
-      flappyBirb.draw();
+      globais.floor.draw();
+      globais.flappyBirb.draw();
+    },
+    click() {
+      globais.flappyBirb.jump();
     },
     update() {
-      flappyBirb.update();
+      globais.flappyBirb.update();
     }
   }
 }
@@ -141,10 +217,11 @@ function loop() {
   activeScreen.update();
   activeScreen.draw();
   requestAnimationFrame(loop);
+  frames = frames + 1;
 }
 
-window.addEventListener('click', function() {
-  if (activeScreen.click){
+window.addEventListener('click', function () {
+  if (activeScreen.click) {
     activeScreen.click();
   }
 });
