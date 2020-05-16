@@ -117,6 +117,95 @@ function createFloor() {
   return floor;
 }
 
+function createTubes() {
+  const tubes = {
+    w: 52,
+    h: 400,
+    floor: {
+      sX: 0,
+      sY: 169,
+    },
+    heaven: {
+      sX: 52,
+      sY: 169,
+    },
+    space: 80,
+    draw() {
+      tubes.pairs.forEach(function(pair) {
+        const yRandom = pair.y;
+        const spaceBetween = 80;
+
+        const tubeHeavenX = pair.x;
+        const tubeHeavenY = yRandom;
+
+        context.drawImage(
+          sprites,
+          tubes.heaven.sX, tubes.heaven.sY,
+          tubes.w, tubes.h,
+          tubeHeavenX, tubeHeavenY,
+          tubes.w, tubes.h,
+        );
+
+        const tubeFloorX = pair.x;
+        const tubeFloorY = tubes.h + spaceBetween + yRandom;
+
+        context.drawImage(
+          sprites,
+          tubes.floor.sX, tubes.floor.sY,
+          tubes.w, tubes.h,
+          tubeFloorX, tubeFloorY,
+          tubes.w, tubes.h,
+        );
+
+        pair.tubeHeaven = {
+          x: tubeFloorX,
+          y: tubes.h + tubeHeavenY
+        }
+        pair.tubeFloor = {
+          x: tubeHeavenX,
+          y: tubeFloorY
+        }
+      })
+    },
+    hasCollisionWithBirb(pair) {
+      const birbHead = globais.flappyBirb.y;
+      const birbFeet = globais.flappyBirb.y + globais.flappyBirb.h;
+
+      if (globais.flappyBirb.x >= pair.x) {
+        if(birbHead <= pair.tubeHeaven.y || birbFeet >= pair.tubeFloor.y)
+          return true;
+      };
+    },
+    pairs: [],
+    update() {
+      const passed100Frames = frames % 100 === 0;
+
+      if (passed100Frames) {
+        tubes.pairs.push({
+          x: canvas.width,
+          y: -150 * (Math.random() + 1),
+        });
+      }
+
+      tubes.pairs.forEach(function(pair) {
+        pair.x = pair.x -2;
+
+        if(tubes.hasCollisionWithBirb(pair)) {
+          setTimeout(() => {
+            changeToScreen(Screens.begin);
+          }, 500);
+        }
+
+        if(pair.x + tubes.w <= 0){
+          tubes.pairs.shift();
+        }
+      });
+    }
+  }
+
+  return tubes;
+}
+
 
 const background = {
   sX: 390,
@@ -147,7 +236,7 @@ const background = {
   },
 }
 
-const getReayImage = {
+const getReadyImage = {
   sX: 134,
   sY: 0,
   w: 174,
@@ -157,10 +246,10 @@ const getReayImage = {
   draw() {
     context.drawImage(
       sprites,
-      getReayImage.sX, getReayImage.sY,
-      getReayImage.w, getReayImage.h,
-      getReayImage.x, getReayImage.y,
-      getReayImage.w, getReayImage.h,
+      getReadyImage.sX, getReadyImage.sY,
+      getReadyImage.w, getReadyImage.h,
+      getReadyImage.x, getReadyImage.y,
+      getReadyImage.w, getReadyImage.h,
     );
   },
 }
@@ -184,12 +273,13 @@ const Screens = {
     init() {
       globais.flappyBirb = createFlappyBirb();
       globais.floor = createFloor();
+      globais.tubes = createTubes();
     },
     draw() {
       background.draw();
       globais.floor.draw();
       globais.flappyBirb.draw();
-      getReayImage.draw();
+      getReadyImage.draw();
     },
     click() {
       changeToScreen(Screens.game);
@@ -201,6 +291,7 @@ const Screens = {
   game: {
     draw() {
       background.draw();
+      globais.tubes.draw();
       globais.floor.draw();
       globais.flappyBirb.draw();
     },
@@ -208,8 +299,9 @@ const Screens = {
       globais.flappyBirb.jump();
     },
     update() {
-      globais.flappyBirb.update();
       globais.floor.update();
+      globais.tubes.update();
+      globais.flappyBirb.update();
     }
   }
 }
