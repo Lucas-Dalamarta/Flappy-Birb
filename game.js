@@ -191,14 +191,13 @@ function createTubes() {
         pair.x = pair.x -2;
 
         if(tubes.hasCollisionWithBirb(pair)) {
-          setTimeout(() => {
-            changeToScreen(Screens.begin);
-          }, 500);
+          changeToScreen(Screens.begin);
         }
 
         if(pair.x + tubes.w <= 0){
           tubes.pairs.shift();
-        }
+        };
+
       });
     }
   }
